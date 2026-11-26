@@ -1,0 +1,40 @@
+name: OrcaPad IPA erstellen
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Repository herunterladen
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Xcode-Version anzeigen
+        run: xcodebuild -version
+
+      - name: Abhängigkeiten laden und IPA bauen
+        run: |
+          swift package resolve
+          swift build -c release
+
+          APP_DIR="Payload/OrcaPad.app"
+          mkdir -p "$APP_DIR"
+
+          cp "$(swift build -c release --show-bin-path)/OrcaPad" \
+             "$APP_DIR/OrcaPad"
+
+          cp App-Info.plist "$APP_DIR/Info.plist"
+
+          chmod +x "$APP_DIR/OrcaPad"
+          zip -r OrcaPad-unsigned.ipa Payload
+
+      - name: IPA hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: OrcaPad-IPA
+          path: OrcaPad-unsigned.ipa
+          if-no-files-found: error
