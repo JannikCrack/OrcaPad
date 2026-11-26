@@ -13,28 +13,25 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Xcode-Version anzeigen
-        run: xcodebuild -version
-
-      - name: Abhängigkeiten laden und IPA bauen
+      - name: xtool installieren
         run: |
-          swift package resolve
-          swift build -c release
+          brew install xtool-org/tap/xtool
+          xtool --version
 
-          APP_DIR="Payload/OrcaPad.app"
-          mkdir -p "$APP_DIR"
+      - name: iOS-SDK prüfen
+        run: |
+          xcrun -sdk iphoneos -show-sdk-path
+          swift --version
 
-          cp "$(swift build -c release --show-bin-path)/OrcaPad" \
-             "$APP_DIR/OrcaPad"
-
-          cp App-Info.plist "$APP_DIR/Info.plist"
-
-          chmod +x "$APP_DIR/OrcaPad"
-          zip -r OrcaPad-unsigned.ipa Payload
+      - name: IPA erstellen
+        run: |
+          xtool dev build --configuration release --ipa
+          find . -type f -name "*.ipa" -print
 
       - name: IPA hochladen
         uses: actions/upload-artifact@v4
         with:
           name: OrcaPad-IPA
-          path: OrcaPad-unsigned.ipa
+          path: |
+            **/*.ipa
           if-no-files-found: error
